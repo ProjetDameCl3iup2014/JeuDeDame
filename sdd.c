@@ -141,9 +141,9 @@ int deplacer(DAMIER *damier, int dx, int dy, int ax, int ay){
 	if(rech_pion_c(damier,ax,ay)!=NULL) return 2;
 	if(p->couleur!=damier->c_tour) return 3;
 	if(p->type==T_DAME){
-		if(boolverif_depl_dame(dx,dy,ax,ay)) return 4;
+		if(!boolverif_depl_dame(dx,dy,ax,ay)) return 4;
 	}else{
-		if(boolverif_depl_pion(damier->c_tour,dx,dy,ax,ay)) return 4;
+		if(!boolverif_depl_pion(p->couleur,dx,dy,ax,ay)) return 4;
 	}
 	p->position.x=ax;
 	p->position.y=ay;
@@ -158,7 +158,7 @@ int boolverif_depl_pion(eCOULEUR c, int dx, int dy, int ax, int ay){
 	 **/
 	if( (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1)) return 0;
 	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 0;
-	if((c==BLANC && dy-ay>0) || (c==NOIR && dy-ay<0)) return 6;
+	if((c==BLANC && dy-ay>0) || (c==NOIR && dy-ay<0)) return 0;
 
 	return 1;
 }
