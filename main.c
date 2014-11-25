@@ -50,28 +50,24 @@ int main(){
 		printf("Déplacement d'un pion : ");
 		char str2[11];
 		sscanf(fgets(str2,10,stdin),"%d,%d %d,%d", &x, &y, &a, &b); 
-		erreur = deplacement(damier,x,y,a,b);
+		erreur = deplacer(damier,x,y,a,b);
 		printf("de (%d,%d) en (%d,%d)\n",x,y,a,b);
 		while(erreur){
 			switch(erreur){
-				case 1: printf("Déplacement trop important pour la pièce séléctionnée\n");
+				case 1: printf("Pièce inexistante\n");
 					break;
-				case 2: printf("Déplacement hors limite\n");
+				case 2: printf("Case d'arrivée encombrée\n");
 					break;
-				case 3: printf("Pièce inexistante\n");
+				case 3: printf("Pièce de la mauvaise couleur\n");
 					break;
-				case 4: printf("Case d'arrivée encombrée\n");
-					break;
-				case 5: printf("Pièce de la mauvaise couleur\n");
-					break;
-				case 6: printf("Déplacement en arrière interdit\n");
+				case 4: printf("Déplacement interdit\n");
 					break;
 				default : printf("Erreur imprévue\n");
 					  break;
 			}
 			printf("Déplacement d'un pion : ");
 			sscanf(fgets(str2,10,stdin),"%d,%d %d,%d", &x, &y, &a, &b); 
-			erreur = deplacement(damier,x,y,a,b);
+			erreur = deplacer(damier,x,y,a,b);
 			printf("de (%d,%d) en (%d,%d)\n",x,y,a,b);
 		}
 		printf("Pion délacer en (%d,%d)\n",a,b);

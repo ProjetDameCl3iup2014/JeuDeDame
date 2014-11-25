@@ -43,7 +43,8 @@ int free_damier(DAMIER *damier);
 void tour_suivant(DAMIER *damier);
 PION* rech_pion_c(DAMIER *damier, int x, int y);
 void aff_damier(DAMIER damier);
-int deplacement(DAMIER *damier, int dx, int dy, int ax, int ay);
+int deplacer(DAMIER *damier, int dx, int dy, int ax, int ay);
+int prendre(DAMIER *damier, int dx, int dy, int ax, int ay);
 
 
 

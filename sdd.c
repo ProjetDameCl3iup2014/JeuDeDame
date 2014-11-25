@@ -2,7 +2,18 @@
 #include <stdio.h>
 #include "sdd.h"
 
+
+int boolverif_depl_pion(eCOULEUR c, int dx, int dy, int ax, int ay);
+int boolverif_depl_dame(int dx, int dy, int ax, int ay);
+
 DAMIER* init_damier(){
+	/**
+	 * Initialisation d'un DAMIER.
+	 * La couleur du tour est initialisée à BLANC
+	 * Le nombre de pièces blanches ou noires est initialisé à 20
+	 * L'initialisation de la liste de pions est expliquée plus bas
+	 * La fonction renvoie un DAMIER* ou NULL en cas d'échec
+	 **/
 	int i = 0;
 	DAMIER *damier = (DAMIER*)malloc(sizeof(DAMIER));
 	if (damier==NULL) return NULL;
@@ -16,7 +27,13 @@ DAMIER* init_damier(){
 		return NULL;
 	}
 	for(i=0;i<NB_PION_B;i++){
-	//Positionnement des pions blancs de [0,19]
+	/**
+	 * Initialisation de la liste de pions.
+	 * Les pièces ont positionnée une case sur deux sur chaque ligne du damier alternativement, changement à chaque ligne, sur les cases d'abscisse paire ou impaire.
+	 * Les pièces de la liste de [0 à 19] sont initialisées avec la couleur BLANC, de [20 à 39] avec la couleur NOIR
+	 * Chaque pièce est initialisée avec le type T_PION
+	 * La dernière case de la liste est initialisé à NULL
+	 **/
 		damier->liste_pion[i]=(PION*)malloc(sizeof(PION));
 		if(damier->liste_pion[i]==NULL){
 			free_damier(damier);
@@ -30,7 +47,6 @@ DAMIER* init_damier(){
 		damier->liste_pion[i]->position.y=i/(COTE_DAMIER/2);
 		damier->liste_pion[i]->couleur=BLANC;
 		damier->liste_pion[i]->type=T_PION;
-	//Positionnement des pions noirs de [20,39]
 		damier->liste_pion[i+NB_PION_N]=(PION*)malloc(sizeof(PION));
 		if(damier->liste_pion[i+NB_PION_N]==NULL){
 			free_damier(damier);
@@ -52,6 +68,12 @@ DAMIER* init_damier(){
 
 
 int free_damier(DAMIER *damier){
+	/**
+	 * Suppression d'un damier
+	 * La fonction permet de supprimer un DAMIER ainsi que toutes ses composantes
+	 * La fonction supprime chaque pièce existante de la liste de pions du DAMIER avant de supprimer la liste puis le damier
+	 * La fonction renvoie le nombre de pièces supprimées
+	 **/
 	int i=0, nb_free=0;
 	
 	while(i<NB_PION){
@@ -68,10 +90,19 @@ int free_damier(DAMIER *damier){
 }
 
 void tour_suivant(DAMIER *damier){
+	/**
+	 * Passage au tour suivant
+	 * La fonction alterne la couleur du tour à chaque appel
+	 **/
 	damier->c_tour=1-damier->c_tour;
 }
 
 PION* rech_pion_c(DAMIER *damier, int x, int y){
+	/**
+	 * Recherche de pion par ses coordonnées
+	 * La fonction parcours la liste de pions d'un DAMIER jusqu'à trouver une pièce de coordonnées(x,y) ou la fin de la liste
+	 * La fonction renvoie un PION* ou NULL en cas d'échec
+	 **/
 	int i=0;
 	
 	while(i<NB_PION){
@@ -86,21 +117,68 @@ PION* rech_pion_c(DAMIER *damier, int x, int y){
 	return NULL;
 }
 
-int deplacement(DAMIER *damier, int dx, int dy, int ax, int ay){
-	if( (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1)) return 1;
-	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 2;
+int prendre(DAMIER *damier, int dx, int dy, int ax, int ay){
+	
+}
+
+int deplacer(DAMIER *damier, int dx, int dy, int ax, int ay){
+	/**
+	 * Déplacement d'une pièce
+	 * Déplace une pièce d'un DAMIER de (dx,dy) à (ax,ay) si toute les conditions sont respectée
+	 * 	la pièce éxiste en (dx,dy)
+	 * 	la case (ax,ay) n'est pas emcombrée
+	 * 	la couleur de la pièce correspond à la couleur du tour actuel
+	 * 	le type de déplacement est correct pour ce type de pièce (T_PION || T_DAME)
+	 * renvoie 0 en cas de réussite
+	 *         1 si la pièce n'éxsite pas en (dx,dy)
+	 *         2 si la case (ax,ay) est encombrée
+	 *         3 si la couleur de la pièce ne correspond pas au tour actuel
+	 *         4 si le type de déplacement n'est pas autorisé pour se type de pièce
+	 **/
+
 	PION *p = rech_pion_c(damier,dx,dy);
-	if(p==NULL) return 3;
-	if(rech_pion_c(damier,ax,ay)!=NULL) return 4;
-	if(p->couleur!=damier->c_tour) return 5;
-	if((damier->c_tour==BLANC && dy-ay>0) || (damier->c_tour==NOIR && dy-ay<0)) return 6;
+	if(p==NULL) return 1;
+	if(rech_pion_c(damier,ax,ay)!=NULL) return 2;
+	if(p->couleur!=damier->c_tour) return 3;
+	if(p->type==T_DAME){
+		if(boolverif_depl_dame(dx,dy,ax,ay)) return 4;
+	}else{
+		if(boolverif_depl_pion(damier->c_tour,dx,dy,ax,ay)) return 4;
+	}
 	p->position.x=ax;
 	p->position.y=ay;
 
 	return 0;
 }
 
+int boolverif_depl_pion(eCOULEUR c, int dx, int dy, int ax, int ay){
+	/**
+	 * Vérifie si une pièce de type T_PION peut ce déplacer de (dx,dy) à (ax,ay)
+	 * retourne 1 si vrai, 0 sinon
+	 **/
+	if( (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1)) return 0;
+	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 0;
+	if((c==BLANC && dy-ay>0) || (c==NOIR && dy-ay<0)) return 6;
+
+	return 1;
+}
+
+
+int boolverif_depl_dame(int dx, int dy, int ax, int ay){
+	/**
+	 * Vérifie si une pièce de type T_DAME peut ce déplacer de (dx,dy) à (ax,ay)
+	 * retourne 1 si vrai, 0 sinon
+	 **/
+	if( (((dx-ax)*(dx-ax)) == ((dy-ay)*(dy-ay)))) return 0;
+	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 0;
+
+	return 1;
+}
+
 void aff_damier(DAMIER damier){
+	/**
+	 * Affiche un cadrillage d'un damier dans son état actuel, avec les pièces positionnées et les coordonnées, dans la console
+	 **/
 	int i=0,x=0,a=7,b=0;
 	PION *p;
 	char buf[100];
