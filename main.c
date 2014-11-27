@@ -3,7 +3,7 @@
 #include <string.h>
 #include "sdd.h"
 
-//test
+
 int main(){
 	DAMIER *damier;
 	PION *p;
