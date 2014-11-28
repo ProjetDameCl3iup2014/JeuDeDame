@@ -6,6 +6,7 @@
 
 int main(){
 	DAMIER *damier;
+	// fraise
 	PION *p;
 	damier = init_damier();
 	if(damier==NULL){
