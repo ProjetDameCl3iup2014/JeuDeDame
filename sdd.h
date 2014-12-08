@@ -25,7 +25,7 @@ typedef enum{
 }eCOULEUR;
 
 typedef struct{
-	POS position;
+	POS pos;
 	eCOULEUR couleur;
 	eTYPE_PION type;
 }PION;
@@ -42,9 +42,10 @@ DAMIER* init_damier();
 int free_damier(DAMIER *damier);
 void tour_suivant(DAMIER *damier);
 PION* rech_pion_c(DAMIER *damier, int x, int y);
+PION* rech_pion(DAMIER *damier, PION *pion);
 void aff_damier(DAMIER damier);
-int deplacer(DAMIER *damier, int dx, int dy, int ax, int ay);
-int prendre(DAMIER *damier, int dx, int dy, int ax, int ay);
+int deplacer(DAMIER *damier, PION *p, int ax, int ay);
+int prendre(DAMIER *damier, PION* p1, PION *p2);
 
 
 

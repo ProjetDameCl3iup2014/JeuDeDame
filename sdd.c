@@ -3,8 +3,8 @@
 #include "sdd.h"
 
 
-int boolverif_depl_pion(eCOULEUR c, int dx, int dy, int ax, int ay);
-int boolverif_depl_dame(int dx, int dy, int ax, int ay);
+int boolverif_depl_piece(PION *p, int ax, int ay);
+int boolverif_pion_jouable(DAMIER *damier, PION *p);
 
 DAMIER* init_damier(){
 	/**
@@ -40,11 +40,11 @@ DAMIER* init_damier(){
 			return NULL;
 		}
 		if(i/(COTE_DAMIER/2)%2==0){
-			damier->liste_pion[i]->position.x=i%(COTE_DAMIER/2)*2;
+			damier->liste_pion[i]->pos.x=i%(COTE_DAMIER/2)*2;
 		}else{
-			damier->liste_pion[i]->position.x=i%(COTE_DAMIER/2)*2+1;
+			damier->liste_pion[i]->pos.x=i%(COTE_DAMIER/2)*2+1;
 		}
-		damier->liste_pion[i]->position.y=i/(COTE_DAMIER/2);
+		damier->liste_pion[i]->pos.y=i/(COTE_DAMIER/2);
 		damier->liste_pion[i]->couleur=BLANC;
 		damier->liste_pion[i]->type=T_PION;
 		damier->liste_pion[i+NB_PION_N]=(PION*)malloc(sizeof(PION));
@@ -53,11 +53,11 @@ DAMIER* init_damier(){
 			return NULL;
 		}
 		if(i/(COTE_DAMIER/2)%2==0){
-			damier->liste_pion[i+NB_PION_N]->position.x=COTE_DAMIER-i%(COTE_DAMIER/2)*2-1;
+			damier->liste_pion[i+NB_PION_N]->pos.x=COTE_DAMIER-i%(COTE_DAMIER/2)*2-1;
 		}else{
-			damier->liste_pion[i+NB_PION_N]->position.x=COTE_DAMIER-i%(COTE_DAMIER/2)*2-2;
+			damier->liste_pion[i+NB_PION_N]->pos.x=COTE_DAMIER-i%(COTE_DAMIER/2)*2-2;
 		}
-		damier->liste_pion[i+NB_PION_N]->position.y=COTE_DAMIER-i/(COTE_DAMIER/2)-1;
+		damier->liste_pion[i+NB_PION_N]->pos.y=COTE_DAMIER-i/(COTE_DAMIER/2)-1;
 		damier->liste_pion[i+NB_PION_N]->couleur=NOIR;
 		damier->liste_pion[i]->type=T_PION;
 	}
@@ -107,7 +107,7 @@ PION* rech_pion_c(DAMIER *damier, int x, int y){
 	
 	while(i<NB_PION){
 		if(damier->liste_pion[i]!=NULL){
-			if(damier->liste_pion[i]->position.x==x && damier->liste_pion[i]->position.y==y){
+			if(damier->liste_pion[i]->pos.x==x && damier->liste_pion[i]->pos.y==y){
 				return damier->liste_pion[i];
 			}
 		}
@@ -117,11 +117,31 @@ PION* rech_pion_c(DAMIER *damier, int x, int y){
 	return NULL;
 }
 
-int prendre(DAMIER *damier, int dx, int dy, int ax, int ay){
+PION* rech_pion(DAMIER *damier, PION *pion){
+	/**
+	 * Recherche de pion
+	 * La fonction parcours la liste de pions d'un DAMIER jusqu'à trouver une pièce de coordonnées(x,y) ou la fin de la liste
+	 * La fonction renvoie un PION* ou NULL en cas d'échec
+	 **/
+	int i=0;
+	
+	while(i<NB_PION){
+		if(damier->liste_pion[i]!=NULL){
+			if(damier->liste_pion[i]==pion){
+				return damier->liste_pion[i];
+			}
+		}
+		i++;
+	}
+
+	return NULL;
+}
+
+int prendre(DAMIER *damier, PION *p1, PION *p2){
 	
 }
 
-int deplacer(DAMIER *damier, int dx, int dy, int ax, int ay){
+int deplacer(DAMIER *damier, PION *p, int ax, int ay){
 	/**
 	 * Déplacement d'une pièce
 	 * Déplace une pièce d'un DAMIER de (dx,dy) à (ax,ay) si toute les conditions sont respectée
@@ -135,49 +155,42 @@ int deplacer(DAMIER *damier, int dx, int dy, int ax, int ay){
 	 *         3 si la couleur de la pièce ne correspond pas au tour actuel
 	 *         4 si le type de déplacement n'est pas autorisé pour se type de pièce
 	 **/
-
-	PION *p = rech_pion_c(damier,dx,dy);
-	if(p==NULL) return 1;
-	if(rech_pion_c(damier,ax,ay)!=NULL) return 2;
-	if(p->couleur!=damier->c_tour) return 3;
-	if(p->type==T_DAME){
-		if(!boolverif_depl_dame(dx,dy,ax,ay)) return 4;
-	}else{
-		if(!boolverif_depl_pion(p->couleur,dx,dy,ax,ay)) return 4;
-	}
-	p->position.x=ax;
-	p->position.y=ay;
+	if(rech_pion(damier,p)!=NULL) return 1;
+	if(boolverif_pion_jouable(damier,p)) return 2;
+	if(!boolverif_depl_piece(p,ax,ay)) return 3;
+	p->pos.x=ax;
+	p->pos.y=ay;
 
 	return 0;
 }
 
-int boolverif_depl_pion(eCOULEUR c, int dx, int dy, int ax, int ay){
+int boolverif_pion_jouable(DAMIER *damier, PION *p){
+	if(p==NULL) return 0;
+	if(rech_pion(damier,p)!=NULL) return 0;
+	if(p->couleur!=damier->c_tour) return 0;
+	return 1;
+}
+
+int boolverif_depl_piece(PION *p, int ax, int ay){
 	/**
 	 * Vérifie si une pièce de type T_PION peut ce déplacer de (dx,dy) à (ax,ay)
 	 * retourne 1 si vrai, 0 sinon
 	 **/
-	if( (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1)) return 0;
+	int dx = p->pos.x;
+	int dy = p->pos.y;
+
+	if((dx-ax!=dy-ay) || (p->type==T_PION && (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1))) return 0;
 	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 0;
-	if((c==BLANC && dy-ay>0) || (c==NOIR && dy-ay<0)) return 0;
+	if(p->type==T_PION && (p->couleur==BLANC && dy-ay>0) || (p->couleur==NOIR && dy-ay<0)) return 0;
 
 	return 1;
 }
 
 
-int boolverif_depl_dame(int dx, int dy, int ax, int ay){
-	/**
-	 * Vérifie si une pièce de type T_DAME peut ce déplacer de (dx,dy) à (ax,ay)
-	 * retourne 1 si vrai, 0 sinon
-	 **/
-	if( (((dx-ax)*(dx-ax)) == ((dy-ay)*(dy-ay)))) return 0;
-	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 0;
-
-	return 1;
-}
 
 void aff_damier(DAMIER damier){
 	/**
-	 * Affiche un cadrillage d'un damier dans son état actuel, avec les pièces positionnées et les coordonnées, dans la console
+	 * Affiche un cadrillage d'un damier dans son état actuel, avec les pièces posnées et les coordonnées, dans la console
 	 **/
 	int i=0,x=0,a=7,b=0;
 	PION *p;
