@@ -3,8 +3,8 @@
 #include "sdd.h"
 
 
-int boolverif_depl_piece(PION *p, int ax, int ay);
-int boolverif_pion_jouable(DAMIER *damier, PION *p);
+int verif_depl_piece(PION *p, int ax, int ay);
+int verif_pion_jouable(DAMIER *damier, PION *p);
 
 DAMIER* init_damier(){
 	/**
@@ -89,6 +89,21 @@ int free_damier(DAMIER *damier){
 	return nb_free;
 }
 
+void suppr_pion(DAMIER *damier, PION *pion){
+
+	int i=0;
+	
+	while(i<NB_PION){
+		if(damier->liste_pion[i]!=NULL){
+			if(damier->liste_pion[i]==pion){
+				damier->liste_pion[i]=NULL;
+			}
+		}
+		i++;
+	}
+	free(pion);
+}
+
 void tour_suivant(DAMIER *damier){
 	/**
 	 * Passage au tour suivant
@@ -137,8 +152,12 @@ PION* rech_pion(DAMIER *damier, PION *pion){
 	return NULL;
 }
 
-int prendre(DAMIER *damier, PION *p1, PION *p2){
+int prendre(DAMIER *damier, PION *p1, PION *p2, int x, int y){
 	
+	suppr_pion(damier,p2);
+	p1->pos.x=x;
+	p1->pos.y=y;
+
 }
 
 int deplacer(DAMIER *damier, PION *p, int ax, int ay){
@@ -148,42 +167,62 @@ int deplacer(DAMIER *damier, PION *p, int ax, int ay){
 	 * 	la pièce éxiste en (dx,dy)
 	 * 	la case (ax,ay) n'est pas emcombrée
 	 * 	la couleur de la pièce correspond à la couleur du tour actuel
-	 * 	le type de déplacement est correct pour ce type de pièce (T_PION || T_DAME)
+	 * 	le chemin est correct pour ce type de pièce (T_PION || T_DAME)
 	 * renvoie 0 en cas de réussite
-	 *         1 si la pièce n'éxsite pas en (dx,dy)
-	 *         2 si la case (ax,ay) est encombrée
-	 *         3 si la couleur de la pièce ne correspond pas au tour actuel
-	 *         4 si le type de déplacement n'est pas autorisé pour se type de pièce
+	 *         1 si la pièce n'éxiste pas en (dx,dy)
+	 *         2 si l'adresse de la pièce donnée est NULL
+	 *         3 si la pièce est introuvable dans la liste des pièces du damier
+	 *         4 si la couleur de la pièce ne correspond pas à celle du tour actuel
+	 *         5 si le chemin n'est pas en diagonale et/ou d'une longueur incorrect
+	 *         6 si le chemin sort du plateau
+	 *         7 si la pièce recule
+	 *         8 si la case d'arrivée est encombrée
 	 **/
-	if(rech_pion(damier,p)!=NULL) return 1;
-	if(boolverif_pion_jouable(damier,p)) return 2;
-	if(!boolverif_depl_piece(p,ax,ay)) return 3;
+	int err;
+
+	if(rech_pion(damier,p)==NULL) return 1;
+	err=verif_pion_jouable(damier,p);
+	if(err) return err+1;
+	err=verif_depl_piece(p,ax,ay);
+	if(err) return err+4;
+	if(rech_pion_c(damier,ax,ay)!=NULL) return 8;
 	p->pos.x=ax;
 	p->pos.y=ay;
 
 	return 0;
 }
 
-int boolverif_pion_jouable(DAMIER *damier, PION *p){
-	if(p==NULL) return 0;
-	if(rech_pion(damier,p)!=NULL) return 0;
-	if(p->couleur!=damier->c_tour) return 0;
-	return 1;
+int verif_pion_jouable(DAMIER *damier, PION *p){
+	/**
+	 * Vérifie si une pièce est jouable pour ce tour
+	 * retourne :	1 si l'adresse de la pièce donnée est NULL
+	 * 		2 si la pièce est introuvable dans la liste des pièces du damier
+	 * 		3 si la couleur de la pièce ne correspond pas à celle du tour actuel
+	 * 		0 sinon
+	 **/
+	if(p==NULL) return 1;
+	if(rech_pion(damier,p)==NULL) return 2;
+	if(p->couleur!=damier->c_tour) return 3;
+
+	return 0;
 }
 
-int boolverif_depl_piece(PION *p, int ax, int ay){
+int verif_depl_piece(PION *p, int ax, int ay){
 	/**
 	 * Vérifie si une pièce de type T_PION peut ce déplacer de (dx,dy) à (ax,ay)
-	 * retourne 1 si vrai, 0 sinon
+	 * retourne :	1 si le chemin est mauvais
+	 * 		2 si la pièce sort du plateau
+	 * 		3 si la direction si la pièce recule
+	 * 		0 sinon
 	 **/
 	int dx = p->pos.x;
 	int dy = p->pos.y;
 
-	if((dx-ax!=dy-ay) || (p->type==T_PION && (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1))) return 0;
-	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 0;
-	if(p->type==T_PION && (p->couleur==BLANC && dy-ay>0) || (p->couleur==NOIR && dy-ay<0)) return 0;
+	if(((dx-ax)*(dx-ax)!=(dy-ay)*(dy-ay)) || (p->type==T_PION && (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1))) return 1;
+	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 2;
+	if(p->type==T_PION && (p->couleur==BLANC && dy-ay>0) || (p->couleur==NOIR && dy-ay<0)) return 3;
 
-	return 1;
+	return 0;
 }
 
 
