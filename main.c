@@ -33,7 +33,7 @@ void listePion(DAMIER *damier){
 }
 
 int main(){
-	DAMIER *damier;
+	DAMIER *damier;	
 	PION *p;
 	damier = init_damier();
 	if(damier==NULL){
