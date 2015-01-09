@@ -4,7 +4,16 @@
 #include "sdd.h"
 #include "com.h"
 
-
+void affTour(DAMIER *damier){
+	switch(damier->c_tour){
+		case 0: printf("Tour blanc\n");
+			break;
+		case 1: printf("Tour noir\n");
+			break;
+		default : printf("Tour inconnu");
+			  break;
+	}
+}
 
 int main(int argc, char *argv[]){
 	int nbByteCom, couleur;
@@ -43,6 +52,8 @@ int main(int argc, char *argv[]){
 
 	aff_damier(*damier);
 	if(couleur==1){
+		affTour(damier);
+		printf("Nombre de prise possible : %d\n", verif_possibilite_prendre(damier));
 		puts("En attente du joueur adverse...");
 		nbByteCom=read(sockfd,dataBuf,sizeof(DATA));
 		if(nbByteCom>0){
@@ -68,10 +79,9 @@ int main(int argc, char *argv[]){
 	}
 	while(!fin_partie(damier)){
 		mauvMouv=1;
-		nbPionJ=verif_possibilite_prendre(damier);
 		promotion(damier);
-		printf("Couleur : %d\n", damier->c_tour);
-		printf("Nombre de prise possible : %d\n", nbPionJ);
+		affTour(damier);
+		printf("Nombre de prise possible : %d\n", verif_possibilite_prendre(damier));
 		while(mauvMouv){
 			mauvMouv=0;
 			printf("Action sur un pion : ");
@@ -114,6 +124,10 @@ int main(int argc, char *argv[]){
 							printf("Rafle : ");
 							nbPara=sscanf(fgets(str2,14,stdin),"%d,%d %d,%d %d,%d", &x, &y, &a, &b, &k, &l);
 						}
+						if(nbPara<6){
+							k=a+(a-x);
+							l=b+(b-y);
+						}
 						if(prendre(damier,p1,rech_pion_c(damier,a,b),k,l)==0){
 							printf("Prise de (%d,%d) par (%d,%d) en (%d,%d)\n",a,b,x,y,k,l);
 							nbByteCom=write(sockfd,&last_modif,sizeof(DATA));
@@ -131,6 +145,8 @@ int main(int argc, char *argv[]){
 		aff_damier(*damier);
 		nbByteCom=write(sockfd,&colis,sizeof(DATA));
 		tour_suivant(damier);
+		affTour(damier);
+		printf("Nombre de prise possible : %d\n", verif_possibilite_prendre(damier));
 		printf("En attente du joueur adverse...\n");
 		nbByteCom=read(sockfd,dataBuf,sizeof(DATA));
 		if(nbByteCom>0){
