@@ -37,17 +37,29 @@ typedef struct{
 	PION **liste_pion;
 }DAMIER;
 
+typedef struct data{
+	enum{DEP,SUP,FIN}type;
+	struct{
+		int dep[2][2];
+		int sup[2];
+	}value;
+}DATA;
+//GLOBALE
+DATA last_modif;
 //FONCTIONS
 DAMIER* init_damier();
 int free_damier(DAMIER *damier);
 void suppr_pion(DAMIER *damier, PION *pion);
+void promotion(DAMIER *damier);
 void tour_suivant(DAMIER *damier);
+int verif_possibilite_prendre(DAMIER *damier);
 PION* rech_pion_c(DAMIER *damier, int x, int y);
 PION* rech_pion(DAMIER *damier, PION *pion);
 void aff_damier(DAMIER damier);
 int deplacer(DAMIER *damier, PION *p, int ax, int ay);
 int prendre(DAMIER *damier, PION* p1, PION *p2, int x, int y);
-
+int readData(DAMIER *damier, DATA data);
+int fin_partie(DAMIER *damier);
 
 
 
