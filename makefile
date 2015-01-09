@@ -11,4 +11,4 @@ com.o : com.c com.h
 	$(CC) $(CCOPT) -c com.c -o com.o $(FLAGS)
 
 clean :
-	rm -f main.o sdd.o jdame 
+	rm -f main.o sdd.o com.o jdame 
