@@ -12,7 +12,7 @@
 // du format de saisie
 #define str(x) # x
 #define xstr(x) str(x)
-int main()
+int main(){
 
 
 int socketDescriptor, status;
