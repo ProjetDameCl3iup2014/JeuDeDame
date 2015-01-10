@@ -13,7 +13,8 @@
 #define str(x) # x
 #define xstr(x) str(x)
 int main()
-{
+
+
 int socketDescriptor, status;
 unsigned int msgLength;
 struct addrinfo hints, *servinfo;
