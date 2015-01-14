@@ -3,6 +3,7 @@
 #include "sdd.h"
 
 
+int verif_pren_piece(DAMIER *damier,PION *p1, PION *p2, int ax, int ay);
 int verif_depl_piece(PION *p, int ax, int ay);
 int verif_pion_jouable(DAMIER *damier, PION *p);
 
@@ -101,7 +102,72 @@ void suppr_pion(DAMIER *damier, PION *pion){
 		}
 		i++;
 	}
-	free(pion);
+	//free(pion);
+}
+
+void promotion(DAMIER *damier){
+	int i=0;
+	
+	while(i<NB_PION){
+		if(damier->liste_pion[i]!=NULL){
+			if(damier->liste_pion[i]->couleur==BLANC && damier->liste_pion[i]->pos.y==COTE_DAMIER){
+				damier->liste_pion[i]->type=T_DAME;
+			}else if(damier->liste_pion[i]->couleur==NOIR && damier->liste_pion[i]->pos.y==0){
+				damier->liste_pion[i]->type=T_DAME;
+			}else{
+			}
+		}
+		i++;
+	}
+}
+
+int fin_partie(DAMIER *damier){
+	int i=0,j=0,x,y,cpt=0;
+	PION *p;
+	
+	if(verif_possibilite_prendre(damier)!=0){
+		return 0;
+	}
+	while(i<NB_PION){
+		if(damier->liste_pion[i]!=NULL){
+			p=damier->liste_pion[i];
+			x=p->pos.x;
+			y=p->pos.y;
+			for(j=0;j<4;j++){
+				if((verif_depl_piece(p,x+(j/2*2-1),y+(j%2*2-1))==0) && (p->couleur==damier->c_tour)){
+					return 0;
+				}
+			}
+		}
+		i++;
+	}	
+
+	return 1;
+}
+
+int verif_possibilite_prendre(DAMIER *damier){
+	int i=0,j=0,x,y,cpt=0;
+	PION *p;
+	PION *p2;
+	
+	while(i<NB_PION){
+		if(damier->liste_pion[i]!=NULL){
+			p=damier->liste_pion[i];
+			x=p->pos.x;
+			y=p->pos.y;
+			for(j=0;j<4;j++){
+				p2=rech_pion_c(damier,x+(j/2*2-1),y+(j%2*2-1));
+				if(p2!=NULL){
+					if((verif_pren_piece(damier,p,p2,x+(j/2*4-2),y+(j%2*4-2))==0) && (verif_pion_jouable(damier,p2)==3) && (p->couleur==damier->c_tour)){
+						cpt++;
+					}
+				}
+			}
+		}
+		i++;
+	}
+
+	return cpt;
 }
 
 void tour_suivant(DAMIER *damier){
@@ -153,10 +219,27 @@ PION* rech_pion(DAMIER *damier, PION *pion){
 }
 
 int prendre(DAMIER *damier, PION *p1, PION *p2, int x, int y){
+
+	int err;
 	
+	if(rech_pion(damier,p1)==NULL) return 1;
+	if(rech_pion(damier,p2)==NULL) return 1;
+	err=verif_pren_piece(damier,p1,p2,x,y);
+	if(err) return err+4;
+
+	last_modif.type=SUP;
+	last_modif.value.dep[0][0]=p1->pos.x;
+	last_modif.value.dep[0][1]=p1->pos.y;
+	last_modif.value.dep[1][0]=x;
+	last_modif.value.dep[1][1]=y;
+	last_modif.value.sup[0]=p2->pos.x;
+	last_modif.value.sup[1]=p2->pos.y;
+
 	suppr_pion(damier,p2);
 	p1->pos.x=x;
 	p1->pos.y=y;
+
+	return 0;
 
 }
 
@@ -186,6 +269,13 @@ int deplacer(DAMIER *damier, PION *p, int ax, int ay){
 	err=verif_depl_piece(p,ax,ay);
 	if(err) return err+4;
 	if(rech_pion_c(damier,ax,ay)!=NULL) return 8;
+	
+	last_modif.type=DEP;
+	last_modif.value.dep[0][0]=p->pos.x;
+	last_modif.value.dep[0][1]=p->pos.y;
+	last_modif.value.dep[1][0]=ax;
+	last_modif.value.dep[1][1]=ay;
+	
 	p->pos.x=ax;
 	p->pos.y=ay;
 
@@ -220,12 +310,46 @@ int verif_depl_piece(PION *p, int ax, int ay){
 
 	if(((dx-ax)*(dx-ax)!=(dy-ay)*(dy-ay)) || (p->type==T_PION && (((dx-ax)*(dx-ax))!=1 || ((dy-ay)*(dy-ay))!=1))) return 1;
 	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 2;
-	if(p->type==T_PION && (p->couleur==BLANC && dy-ay>0) || (p->couleur==NOIR && dy-ay<0)) return 3;
+	if(p->type==T_PION && ((p->couleur==BLANC && dy-ay>0) || (p->couleur==NOIR && dy-ay<0))) return 3;
 
 	return 0;
 }
 
+int verif_pren_piece(DAMIER *damier, PION *p1, PION *p2, int ax, int ay){
+	/**
+	 * Vérifie si une pièce de type T_PION peut ce déplacer de (dx,dy) à (ax,ay)
+	 * retourne :	1 si le chemin est mauvais
+	 * 		2 si la pièce sort du plateau
+	 * 		3 si la piece à prendre est mal positionnée
+	 * 		4 si la case d'arrivée n'est pas vide
+	 * 		5 si le pion à prendre n'est pas valide
+	 * 		0 sinon
+	 **/
+	int dx = p1->pos.x;
+	int dy = p1->pos.y;
+	int k = p2->pos.x;
+	int l = p2->pos.y;
 
+	if(((dx-ax)*(dx-ax)!=(dy-ay)*(dy-ay)) || (p1->type==T_PION && (((dx-ax)*(dx-ax))!=4 || ((dy-ay)*(dy-ay))!=4))) return 1;
+	if(ax<0 || ay<0 || ax>=COTE_DAMIER || ay>=COTE_DAMIER) return 2;
+	if(((dx-k)*(dx-k)!=(dy-l)*(dy-l)) || (p1->type==T_PION && (((dx-k)*(dx-k))!=1 || ((dy-l)*(dy-l))!=1))) return 3;
+	if(rech_pion_c(damier,ax,ay)!=NULL) return 4;
+	if(verif_pion_jouable(damier,p2)!=3) return 5;
+	
+	return 0;
+}
+
+int readData(DAMIER *damier, DATA data){
+	if(data.type==DEP){
+		if(deplacer(damier,rech_pion_c(damier,data.value.dep[0][0],data.value.dep[0][1]),data.value.dep[1][0],data.value.dep[1][1])!=0) return 1;
+	}else if(data.type==SUP){
+		if(prendre(damier,rech_pion_c(damier,data.value.dep[0][0],data.value.dep[0][1]),rech_pion_c(damier,data.value.sup[0],data.value.sup[1]),data.value.dep[1][0],data.value.dep[1][1])!=0) return 1;
+	}else{
+		return 1;
+	}
+
+	return 0;
+}
 
 void aff_damier(DAMIER damier){
 	/**
@@ -250,10 +374,18 @@ void aff_damier(DAMIER damier){
 
 		if(p!=NULL){
 			if(p->couleur==BLANC){
-				sprintf(buf,format,white,a*x+b,"0 ");
+				if(p->type==T_PION){
+					sprintf(buf,format,white,a*x+b,"0 ");
+				}else{
+					sprintf(buf,format,white,a*x+b,"D ");
+				}
 				system(buf);
 			}else{
-				sprintf(buf,format,green,a*x+b,"O ");
+				if(p->type==T_PION){
+					sprintf(buf,format,green,a*x+b,"O ");
+				}else{
+					sprintf(buf,format,green,a*x+b,"D ");
+				}
 				system(buf);
 			}
 		}else{
